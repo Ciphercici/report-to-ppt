@@ -21,12 +21,31 @@ Report-format documents cannot be "format-converted" directly into good PPT.
 You must first **extract and reorganize** content into a presentation narrative,
 then lay out each slide individually.
 
-The quality path: **Claude designs the outline, script handles the formatting.**
-Claude reads the report and writes a `.slide.md` outline (Marp format) with
-proper content提炼 and narrative structure. The script reads that outline
-and generates well-designed PPTX automatically.
+The quality path: **Claude designs the outline → script generates base PPTX →
+officecli tweaks and verifies.**
 
-## Workflow (Quality Path)
+## Toolchain
+
+| Tool | Role |
+|------|------|
+| `build_ppt.py` | Content structure → initial PPTX (the "rough cut") |
+| `officecli` | Post-generation tweaks: fix text, adjust colors, verify quality |
+
+### Installing officecli
+
+If `officecli` is not already installed:
+
+```bash
+# macOS / Linux
+curl -fsSL https://d.officecli.ai/install.sh | bash
+
+# Windows (PowerShell)
+irm https://d.officecli.ai/install.ps1 | iex
+```
+
+Verify: `officecli --version`
+
+## Workflow
 
 ### Phase 1: Design the slide outline
 
@@ -43,60 +62,76 @@ and generates well-designed PPTX automatically.
 4. Each slide: one information focus, 3-5 bullet points, max 1 image
 5. Present the outline to the user for approval
 
-### Phase 2: Generate PPTX
-
-Run the bundled script against the `.slide.md`:
+### Phase 2: Generate base PPTX
 
 ```bash
 python <skill-path>/scripts/build_ppt.py outline.slide.md -o output.pptx
 ```
 
-The script will:
-1. Parse the Marp-format outline
-2. Apply the v2 design system (title bars, accent colors, KPI cards)
-3. Render cover/section-dividers with dark backgrounds
-4. Place images with borders and auto-scaling
-5. Convert `**metrics**` to KPI cards on summary slides
-6. Handle `###` sub-headers as section titles within slides
-7. Clean up table markdown into readable key-value pairs
+The script auto-applies the design system: title bars, accent colors, KPI cards,
+cover/conclusion dark backgrounds, image borders and scaling, sub-header styling.
 
-### Phase 3: Verify
+### Phase 3: Fine-tune with officecli
 
-```python
-from pptx import Presentation
-prs = Presentation('output.pptx')
-for i, s in enumerate(prs.slides):
-    texts = [sh.text_frame.text[:60] for sh in s.shapes
-             if sh.has_text_frame and sh.text_frame.text.strip()]
-    imgs = sum(1 for sh in s.shapes if sh.shape_type == 13)
-    print(f'{i+1:2d}: {len(s.shapes)} shapes, {imgs} img | {texts[0] if texts else "(empty)"}')
+Use officecli to make targeted adjustments **without touching Python code**.
+Natural language → CLI commands — change text, fix colors, adjust layout.
+
+**Inspect before editing:**
+```bash
+officecli view output.pptx outline          # Slide-by-slide structure
+officecli view output.pptx issues           # Find formatting problems
+officecli get output.pptx '/slide[3]' --depth 1    # List all shapes on slide 3
 ```
 
-A good result: 15±3 slides, 5-25 shapes per slide, images present where expected,
-file size > 1 MB.
+**Common tweaks:**
+```bash
+# Fix text
+officecli set output.pptx '/slide[2]/shape[2]' --prop text="正确的标题"
+
+# Change colors
+officecli set output.pptx '/slide[1]/shape[1]' --prop fill=1E2A38
+
+# Adjust font size
+officecli set output.pptx '/slide[3]/shape[3]' --prop font.size=18pt
+
+# Replace text across all slides
+officecli set output.pptx / --find "旧文字" --replace "新文字"
+
+# Add a shape
+officecli add output.pptx '/slide[5]' --type shape --prop text="补充内容" --prop x=2cm --prop y=6cm --prop font.size=14pt
+
+# Remove a shape
+officecli remove output.pptx '/slide[4]/shape[2]'
+```
+
+Run `officecli help pptx` for the full element/property schema. Use `officecli help pptx shape` before setting shape properties.
+
+### Phase 4: Verify
+
+```bash
+# Quick slide count + structure check
+officecli view output.pptx stats
+
+# Auto-detect formatting issues
+officecli view output.pptx issues --type format
+
+# Manual content spot-check
+officecli view output.pptx outline
+```
+
+A good result: 12-18 slides, file > 1 MB, zero `issues` flagged.
 
 ### Quick Draft (Auto Mode)
 
-For a quick first draft without writing an outline, run auto mode directly
-on the raw report:
+For a quick first draft without writing an outline:
 
 ```bash
 python <skill-path>/scripts/build_ppt.py report.md -o output.pptx
 ```
 
-This auto-parses the markdown, chunks content, and generates slides. Quality
-will be lower than the outline path — raw text becomes bullet points
-verbatim, without Claude-level提炼.
-
-### Manual Fine-Tuning
-
-If specific slides need pixel-level control:
-
-1. Copy `build_ppt.py` to the target directory
-2. Edit the slide functions under `# MANUAL MODE`
-3. Use helpers: `title_bar()`, `body_box()`, `bullet()`, `add_image()`,
-   `kpi_card()`, `page_number()`
-4. Run: `python build_ppt.py`
+Auto-parses the markdown, chunks content, generates slides. Quality is lower
+than the outline path — raw text becomes bullet points verbatim. Use officecli
+to clean up afterwards.
 
 ## .slide.md Format Quick Reference
 
@@ -154,6 +189,6 @@ See `references/pitfalls.md` for detailed examples of what NOT to do.
 
 | Resource | Purpose |
 |----------|---------|
-| `scripts/build_ppt.py` | Main script — outline mode, auto mode, or manual mode |
+| `scripts/build_ppt.py` | Generate base PPTX from .slide.md outline (outline mode) or raw .md (auto mode) |
 | `references/design-system.md` | Full visual specification with code examples |
 | `references/pitfalls.md` | Common mistakes and how to avoid them |
