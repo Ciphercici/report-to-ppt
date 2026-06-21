@@ -2,6 +2,41 @@
 
 把内容报告（Markdown）转成专业可编辑的 PowerPoint 演示文稿。
 
+## 安装
+
+### 方式一：从 GitHub Release 下载
+
+1. 在 [Releases](https://github.com/<user>/report-to-ppt/releases) 页面下载 `report-to-ppt.skill`
+2. 解压到 Claude Code 的 skills 目录：
+
+**Windows (PowerShell):**
+```powershell
+Expand-Archive report-to-ppt.skill -DestinationPath "$env:USERPROFILE\.claude\skills\report-to-ppt"
+```
+
+**macOS / Linux:**
+```bash
+unzip report-to-ppt.skill -d ~/.claude/skills/report-to-ppt/
+```
+
+### 方式二：Git Clone
+
+```bash
+git clone https://github.com/<user>/report-to-ppt.git ~/.claude/skills/report-to-ppt/
+```
+
+### 方式三：手动复制
+
+把整个 `report-to-ppt/` 目录放到 `~/.claude/skills/` 下即可。
+
+### 验证安装
+
+```bash
+ls ~/.claude/skills/report-to-ppt/SKILL.md && echo "安装成功"
+```
+
+> 依赖：`pip install python-pptx`（Python 3.8+，无其他依赖）
+
 ## 为什么不用 Pandoc / Marp
 
 | 工具 | 问题 |
