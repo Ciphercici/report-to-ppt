@@ -6,8 +6,9 @@
 
 ### 方式一：从 GitHub Release 下载
 
-1. 在 [Releases](https://github.com/<user>/report-to-ppt/releases) 页面下载 `report-to-ppt.skill`
-2. 解压到 Claude Code 的 skills 目录：
+1. 在 [Releases](https://github.com/Ciphercici/report-to-ppt/releases) 页面下载 `report-to-ppt.zip`
+2. 解压后为report-to-ppt.skill
+3. 解压到 Claude Code 的 skills 目录：
 
 **Windows (PowerShell):**
 ```powershell
@@ -22,7 +23,7 @@ unzip report-to-ppt.skill -d ~/.claude/skills/report-to-ppt/
 ### 方式二：Git Clone
 
 ```bash
-git clone https://github.com/<user>/report-to-ppt.git ~/.claude/skills/report-to-ppt/
+git clone https://github.com/Ciphercici/report-to-ppt.git ~/.claude/skills/report-to-ppt/
 ```
 
 ### 方式三：手动复制
